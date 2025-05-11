@@ -1,7 +1,8 @@
 // script.js
 
+// Full Quiz Questions
 const questions = [
-    // Multiple Choice Questions (MCQs)
+    // Multiple Choice
     {
         question: "حمد کا مطلب کیا ہے؟",
         options: ["دعا", "تعریف", "سوال", "جواب"],
@@ -28,7 +29,7 @@ const questions = [
         answer: "Car"
     },
 
-    // Short Answer Questions
+    // Short Answer
     {
         question: "نظم کا بنیادی پیغام کیا ہے؟",
         type: "short-answer"
@@ -50,7 +51,7 @@ const questions = [
         type: "short-answer"
     },
 
-    // Fill in the blanks
+    // Fill in the Blank
     {
         question: "حمد کا مطلب ہے __________۔",
         type: "fill-in-the-blank",
@@ -77,7 +78,7 @@ const questions = [
         answer: "thankful"
     },
 
-    // True or False
+    // True/False
     {
         question: "حمد صرف انسانوں کی تعریف ہے۔",
         options: ["True", "False"],
@@ -113,11 +114,9 @@ const questions = [
 let currentQuestionIndex = 0;
 let score = 0;
 let userAnswers = [];
-
-// Predefined Code for retake
 const predefinedCode = '334556';
 
-// Check for incognito mode (localStorage)
+// Prevent incognito mode usage
 function checkIncognito() {
     try {
         localStorage.setItem('test', 'test');
@@ -128,133 +127,118 @@ function checkIncognito() {
     }
 }
 
-// Start quiz and load first question
+// Event bindings
+document.getElementById('start-quiz-btn').addEventListener('click', () => {
+    if (getCookie("quizTaken")) {
+        showPage("code-page");
+    } else {
+        startQuiz();
+    }
+});
+document.getElementById('retake-quiz-btn').addEventListener('click', () => showPage("code-page"));
+document.getElementById('submit-code-btn').addEventListener('click', submitCode);
+
 function startQuiz() {
-    document.getElementById('welcome-page').style.display = 'none';
-    document.getElementById('quiz-page').style.display = 'block';
+    currentQuestionIndex = 0;
+    score = 0;
+    userAnswers = [];
+    setCookie("quizTaken", "true", 7);
+    showPage("quiz-page");
     loadQuestion();
 }
 
-// Load question and options
 function loadQuestion() {
-    const question = questions[currentQuestionIndex];
-    document.getElementById('question').textContent = question.question;
-
+    const questionObj = questions[currentQuestionIndex];
+    const questionBox = document.getElementById('question');
     const optionsContainer = document.getElementById('options');
+    const nextBtn = document.getElementById('next-btn');
+
+    questionBox.textContent = questionObj.question;
     optionsContainer.innerHTML = '';
+    nextBtn.disabled = true;
 
-    if (question.type === "short-answer") {
-        const input = document.createElement('input');
+    if (questionObj.type === "short-answer" || questionObj.type === "fill-in-the-blank") {
+        const input = document.createElement("input");
         input.type = "text";
-        input.id = "short-answer";
+        input.className = "code-input";
+        input.placeholder = "Your answer here";
         optionsContainer.appendChild(input);
-        document.getElementById('next-btn').onclick = () => handleShortAnswer(input.value);
-    } else if (question.type === "fill-in-the-blank") {
-        const input = document.createElement('input');
-        input.type = "text";
-        input.id = "fill-in-the-blank";
-        optionsContainer.appendChild(input);
-        document.getElementById('next-btn').onclick = () => handleFillInTheBlank(input.value);
-    } else if (question.type === "true-false") {
-        question.options.forEach(option => {
-            const button = document.createElement('button');
-            button.textContent = option;
-            button.onclick = () => handleTrueFalse(option);
-            optionsContainer.appendChild(button);
+
+        nextBtn.disabled = false;
+        nextBtn.onclick = () => {
+            const userInput = input.value.trim();
+            if (questionObj.type === "fill-in-the-blank" && userInput.toLowerCase() === questionObj.answer.toLowerCase()) {
+                score++;
+            }
+            userAnswers.push(userInput);
+            moveToNextQuestion();
+        };
+    } else {
+        questionObj.options.forEach(option => {
+            const btn = document.createElement("button");
+            btn.textContent = option;
+            btn.onclick = () => {
+                if (option === questionObj.answer) score++;
+                userAnswers.push(option);
+                moveToNextQuestion();
+            };
+            optionsContainer.appendChild(btn);
         });
-    } else {
-        question.options.forEach(option => {
-            const button = document.createElement('button');
-            button.textContent = option;
-            button.onclick = () => handleAnswer(option);
-            optionsContainer.appendChild(button);
-        });
     }
 }
 
-// Handle answer for MCQs
-function handleAnswer(selectedOption) {
-    const correctAnswer = questions[currentQuestionIndex].answer;
-    if (selectedOption === correctAnswer) {
-        score++;
-    }
-
+function moveToNextQuestion() {
     currentQuestionIndex++;
     if (currentQuestionIndex < questions.length) {
         loadQuestion();
     } else {
-        showScore();
+        showFinalScore();
     }
 }
 
-// Handle short answer
-function handleShortAnswer(answer) {
-    userAnswers[currentQuestionIndex] = answer;
-    currentQuestionIndex++;
-    if (currentQuestionIndex < questions.length) {
-        loadQuestion();
+function showFinalScore() {
+    document.getElementById('score').textContent = `${score} / ${questions.filter(q => q.answer).length}`;
+    showPage("score-page");
+}
+
+// 6-digit code for retake
+function submitCode() {
+    const codeInput = document.getElementById("code-input").value.trim();
+    if (codeInput === predefinedCode) {
+        eraseCookie("quizTaken");
+        document.getElementById("error-message").textContent = '';
+        startQuiz();
     } else {
-        showScore();
+        document.getElementById("error-message").textContent = "Incorrect Code. Please try again.";
     }
 }
 
-// Handle fill-in-the-blank
-function handleFillInTheBlank(answer) {
-    const correctAnswer = questions[currentQuestionIndex].answer;
-    if (answer.trim().toLowerCase() === correctAnswer.trim().toLowerCase()) {
-        score++;
-    }
-    currentQuestionIndex++;
-    if (currentQuestionIndex < questions.length) {
-        loadQuestion();
+// Page display helper
+function showPage(pageId) {
+    ["welcome-page", "quiz-page", "score-page", "code-page"].forEach(id => {
+        document.getElementById(id).style.display = 'none';
+    });
+    document.getElementById(pageId).style.display = 'block';
+}
+
+// Cookie helpers
+function setCookie(name, value, days) {
+    const expires = new Date(Date.now() + days * 864e5).toUTCString();
+    document.cookie = `${name}=${value}; expires=${expires}; path=/`;
+}
+function getCookie(name) {
+    return document.cookie.split('; ').find(row => row.startsWith(name + '='))?.split('=')[1];
+}
+function eraseCookie(name) {
+    document.cookie = `${name}=; Max-Age=0; path=/`;
+}
+
+// Initialization
+window.onload = () => {
+    checkIncognito();
+    if (getCookie("quizTaken")) {
+        showPage("code-page");
     } else {
-        showScore();
+        showPage("welcome-page");
     }
-}
-
-// Handle true/false answer
-function handleTrueFalse(selectedOption) {
-    const correctAnswer = questions[currentQuestionIndex].answer;
-    if (selectedOption === correctAnswer) {
-        score++;
-    }
-    currentQuestionIndex++;
-    if (currentQuestionIndex < questions.length) {
-        loadQuestion();
-    } else {
-        showScore();
-    }
-}
-
-// Show score and allow retake
-function showScore() {
-    localStorage.setItem('quizScore', score);
-    document.getElementById('quiz-page').style.display = 'none';
-    document.getElementById('score-page').style.display = 'block';
-    document.getElementById('score').textContent = score + '/' + questions.length;
-}
-
-// Retake quiz page (prompt for 6-digit code)
-function retakeQuiz() {
-    document.getElementById('code-page').style.display = 'block';
-    document.getElementById('retake-quiz-btn').style.display = 'none';
-    document.getElementById('submit-code-btn').onclick = function() {
-        const userCode = document.getElementById('code-input').value;
-        if (userCode === predefinedCode) {
-            currentQuestionIndex = 0;
-            score = 0;
-            document.getElementById('code-page').style.display = 'none';
-            document.getElementById('quiz-page').style.display = 'block';
-            loadQuestion();
-        } else {
-            document.getElementById('error-message').textContent = 'Incorrect Code. Please try again.';
-        }
-    };
-}
-
-// Event Listeners
-document.getElementById('start-quiz-btn').addEventListener('click', startQuiz);
-document.getElementById('retake-quiz-btn').addEventListener('click', retakeQuiz);
-
-// Initialize setup
-checkIncognito();
+};
