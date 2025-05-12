@@ -1,225 +1,134 @@
-// ==============================
-// Quiz Questions
-// ==============================
-const questions = [
-    // MCQs
-    {
-        question: "حمد کا مطلب کیا ہے؟",
-        options: ["دعا", "تعریف", "سوال", "جواب"],
-        answer: "تعریف"
-    },
-    {
-        question: "شاعر نے قدرت کی کن چیزوں کا ذکر کیا؟",
-        options: ["گاڑی", "کمپیوٹر", "زمین و آسمان", "موبائل"],
-        answer: "زمین و آسمان"
-    },
-    {
-        question: "Who is praised in this poem?",
-        options: ["The Prophet (PBUH)", "A king", "Allah Almighty", "A poet"],
-        answer: "Allah Almighty"
-    },
-    {
-        question: "تسبیح کا مطلب ہے:",
-        options: ["Prayer", "Praise of Allah", "Complaint", "Question"],
-        answer: "Praise of Allah"
-    },
-    {
-        question: "Which element of nature is not mentioned in the poem?",
-        options: ["Sky", "Light", "River", "Car"],
-        answer: "Car"
-    },
-
-    // Short answer
-    { question: "نظم کا بنیادی پیغام کیا ہے؟", type: "short-answer" },
-    { question: "شاعر کے نزدیک قدرت کس کی گواہی دیتی ہے؟", type: "short-answer" },
-    { question: "تسبیح کا مطلب اپنے الفاظ میں بیان کریں۔", type: "short-answer" },
-    { question: "What is the poet thankful for?", type: "short-answer" },
-    { question: "What should a human being do in response to nature's beauty?", type: "short-answer" },
-
-    // Fill in the blank
-    { question: "حمد کا مطلب ہے __________۔", type: "fill-in-the-blank", answer: "تعریف" },
-    { question: "ہر چیز اللہ کی __________ کرتی ہے۔", type: "fill-in-the-blank", answer: "تعریف" },
-    { question: "شاعر کے مطابق زمین و آسمان اللہ کی __________ ہیں۔", type: "fill-in-the-blank", answer: "نشانیاں" },
-    { question: "Nature reflects the __________ of God.", type: "fill-in-the-blank", answer: "glory" },
-    { question: "The poem teaches us to be __________.", type: "fill-in-the-blank", answer: "thankful" },
-
-    // True/false
-    { question: "حمد صرف انسانوں کی تعریف ہے۔", options: ["True", "False"], answer: "False", type: "true-false" },
-    { question: "شاعر نے اللہ کی نشانیاں بیان کیں۔", options: ["True", "False"], answer: "True", type: "true-false" },
-    { question: "The poem is about human emotions.", options: ["True", "False"], answer: "False", type: "true-false" },
-    { question: "Nature is silent in praising God.", options: ["True", "False"], answer: "False", type: "true-false" },
-    { question: "The sky and earth glorify Allah.", options: ["True", "False"], answer: "True", type: "true-false" }
-];
-
-// ==============================
-// Constants & State
-// ==============================
-let currentQuestionIndex = 0;
-let score = 0;
-const predefinedCode = "334556";
-
-// ==============================
-// DOM Elements
-// ==============================
-const pages = {
-  welcome: document.getElementById('welcome-page'),
-  quiz: document.getElementById('quiz-page'),
-  score: document.getElementById('score-page'),
-  code: document.getElementById('code-page')
+let quizData = [];
+let currentLesson = "";
+const lessonCodes = {
+  "L1": { take: "L1TAKE", retake: "L1RETAKE" },
+  "L2": { take: "L2TAKE", retake: "L2RETAKE" },
+  "L3": { take: "L3TAKE", retake: "L3RETAKE" },
+  "L4": { take: "L4TAKE", retake: "L4RETAKE" },
+  "L5": { take: "L5TAKE", retake: "L5RETAKE" },
+  "L6": { take: "L6TAKE", retake: "L6RETAKE" },
+  "L7": { take: "L7TAKE", retake: "L7RETAKE" },
+  "L8": { take: "L8TAKE", retake: "L8RETAKE" },
+  "L9": { take: "L9TAKE", retake: "L9RETAKE" },
+  "L10": { take: "L10TAKE", retake: "L10RETAKE" },
+  "L11": { take: "L11TAKE", retake: "L11RETAKE" },
+  "L12": { take: "L12TAKE", retake: "L12RETAKE" },
+  "L13": { take: "L13TAKE", retake: "L13RETAKE" },
+  "L14": { take: "L14TAKE", retake: "L14RETAKE" },
+  "L15": { take: "L15TAKE", retake: "L15RETAKE" },
+  "L16": { take: "L16TAKE", retake: "L16RETAKE" }
 };
 
-const questionEl = document.getElementById('question');
-const optionsEl = document.getElementById('options');
-const nextBtn = document.getElementById('next-btn');
-const scoreEl = document.getElementById('score');
-const errorMsg = document.getElementById('error-message');
+function loadQuiz() {
+  const code = document.getElementById("lesson-code").value.trim();
+  if (!code) return alert("Please enter a lesson code.");
 
-// ==============================
-// Page Initialization
-// ==============================
-window.onload = async () => {
-  const incognito = await detectIncognito();
-  if (incognito) {
-    alert("You cannot take the quiz in incognito/private mode.");
-    window.location.href = "https://www.google.com";
+  const lessonNum = code.match(/L\d{1,2}/)?.[0]; // Extract L1 to L16
+  if (!lessonCodes[lessonNum]) {
+    alert("Invalid lesson code.");
     return;
   }
 
-  if (getCookie("quizTaken")) {
-    showPage("code");
-  } else {
-    showPage("welcome");
+  const savedStatus = localStorage.getItem(lessonNum);
+  const isRetake = code === lessonCodes[lessonNum].retake;
+  const isFirstTake = code === lessonCodes[lessonNum].take;
+
+  if (savedStatus === "done" && !isRetake) {
+    alert("You already completed this quiz. Use the retake code if allowed.");
+    return;
   }
-};
 
-// ==============================
-// Event Listeners
-// ==============================
-document.getElementById('start-quiz-btn').addEventListener('click', () => {
-  getCookie("quizTaken") ? showPage("code") : startQuiz();
-});
-
-document.getElementById('retake-quiz-btn').addEventListener('click', () => showPage("code"));
-
-document.getElementById('submit-code-btn').addEventListener('click', () => {
-  const code = document.getElementById('code-input').value.trim();
-  if (code === predefinedCode) {
-    eraseCookie("quizTaken");
-    errorMsg.textContent = "";
-    startQuiz();
-  } else {
-    errorMsg.textContent = "Incorrect Code. Please try again.";
+  if (!isFirstTake && !isRetake) {
+    alert("Incorrect code for this lesson.");
+    return;
   }
-});
 
-nextBtn.addEventListener('click', () => {
-  currentQuestionIndex++;
-  currentQuestionIndex < questions.length ? loadQuestion() : finishQuiz();
-});
-
-// Lock quiz on tab switch or window blur
-document.addEventListener("visibilitychange", () => {
-  if (document.hidden && getCurrentPage() === "quiz") {
-    lockQuiz();
-  }
-});
-
-// ==============================
-// Core Quiz Functions
-// ==============================
-function startQuiz() {
-  currentQuestionIndex = 0;
-  score = 0;
-  setCookie("quizTaken", "true", 7);
-  showPage("quiz");
-  loadQuestion();
+  currentLesson = lessonNum;
+  fetchQuizData(lessonNum, code);
 }
 
-function loadQuestion() {
-  const q = questions[currentQuestionIndex];
-  questionEl.textContent = q.question;
-  optionsEl.innerHTML = '';
-  nextBtn.disabled = true;
+function fetchQuizData(lessonNum, codeUsed) {
+  const lessonFile = `lesson${lessonNum.slice(1)}.json`;
+  fetch(lessonFile)
+    .then(res => {
+      if (!res.ok) throw new Error("Lesson not found.");
+      return res.json();
+    })
+    .then(data => {
+      if (!data.code || data.code !== codeUsed) {
+        alert("Lesson code does not match this file.");
+        return;
+      }
+      quizData = data.questions;
+      displayQuiz();
+    })
+    .catch(err => {
+      alert("Error loading lesson: " + err.message);
+    });
+}
 
-  if (q.type === "short-answer" || q.type === "fill-in-the-blank") {
-    const input = document.createElement("input");
-    input.type = "text";
-    input.className = "code-input";
-    input.placeholder = "Write your answer here...";
-    optionsEl.appendChild(input);
-    nextBtn.disabled = false;
+function displayQuiz() {
+  const container = document.getElementById("quiz-container");
+  container.innerHTML = "";
 
-    nextBtn.onclick = () => {
-      const userInput = input.value.trim();
-      if (q.type === "fill-in-the-blank" && userInput.toLowerCase() === q.answer.toLowerCase()) {
+  quizData.forEach((q, index) => {
+    const div = document.createElement("div");
+    div.className = "question";
+    div.innerHTML = `<strong>Q${index + 1}: ${q.question}</strong><br>`;
+
+    if (q.type === "mcq") {
+      q.options.forEach((opt, i) => {
+        div.innerHTML += `
+          <label>
+            <input type="radio" name="q${index}" value="${i}"> ${opt}
+          </label><br>`;
+      });
+    } else if (q.type === "short" || q.type === "blank") {
+      div.innerHTML += `<input type="text" name="q${index}" /><br>`;
+    } else if (q.type === "truefalse") {
+      div.innerHTML += `
+        <label><input type="radio" name="q${index}" value="true"> True</label>
+        <label><input type="radio" name="q${index}" value="false"> False</label><br>`;
+    }
+
+    container.appendChild(div);
+  });
+
+  const submitBtn = document.createElement("button");
+  submitBtn.textContent = "Submit Quiz";
+  submitBtn.onclick = submitQuiz;
+  container.appendChild(submitBtn);
+  container.classList.remove("hidden");
+}
+
+function submitQuiz() {
+  let score = 0;
+
+  quizData.forEach((q, i) => {
+    const input = document.querySelector(`[name="q${i}"]:checked`) || document.querySelector(`[name="q${i}"]`);
+    const userAnswer = input?.value?.trim();
+
+    if (userAnswer != null) {
+      if (q.type === "mcq" && parseInt(userAnswer) === q.answer) {
+        score++;
+      } else if ((q.type === "short" || q.type === "blank") && q.answer) {
+        if (userAnswer.toLowerCase() === q.answer.toLowerCase()) {
+          score++;
+        }
+      } else if (q.type === "truefalse" && String(q.answer) === userAnswer) {
         score++;
       }
-      nextQuestion();
-    };
-  } else {
-    q.options.forEach(option => {
-      const btn = document.createElement("button");
-      btn.textContent = option;
-      btn.onclick = () => {
-        if (option === q.answer) score++;
-        nextQuestion();
-      };
-      optionsEl.appendChild(btn);
-    });
-  }
-}
-
-function nextQuestion() {
-  currentQuestionIndex++;
-  currentQuestionIndex < questions.length ? loadQuestion() : finishQuiz();
-}
-
-function finishQuiz() {
-  const scorableCount = questions.filter(q => q.answer).length;
-  scoreEl.textContent = `${score} / ${scorableCount}`;
-  showPage("score");
-}
-
-function lockQuiz() {
-  eraseCookie("quizTaken");
-  alert("You switched tabs. The quiz is now locked.");
-  showPage("code");
-}
-
-// ==============================
-// Helper Functions
-// ==============================
-function showPage(name) {
-  Object.values(pages).forEach(p => p.style.display = 'none');
-  pages[name].style.display = 'block';
-}
-
-function getCurrentPage() {
-  return Object.entries(pages).find(([, el]) => el.style.display === 'block')?.[0] || "";
-}
-
-function setCookie(name, value, days) {
-  const d = new Date();
-  d.setTime(d.getTime() + days * 86400000);
-  document.cookie = `${name}=${value};expires=${d.toUTCString()};path=/`;
-}
-
-function getCookie(name) {
-  return document.cookie.split("; ").find(row => row.startsWith(name + "="))?.split("=")[1];
-}
-
-function eraseCookie(name) {
-  document.cookie = `${name}=; Max-Age=0; path=/`;
-}
-
-// ==============================
-// Incognito Detection
-// ==============================
-function detectIncognito() {
-  return new Promise(resolve => {
-    const fs = window.RequestFileSystem || window.webkitRequestFileSystem;
-    if (!fs) resolve(false);
-    else fs(window.TEMPORARY, 100, () => resolve(false), () => resolve(true));
+    }
   });
-}
 
+  // Save completion status
+  localStorage.setItem(currentLesson, "done");
+
+  const container = document.getElementById("quiz-container");
+  container.innerHTML = `<h2>You scored ${score} / ${quizData.length}</h2>`;
+  
+  const retakeBtn = document.createElement("button");
+  retakeBtn.textContent = "Retake Quiz";
+  retakeBtn.onclick = () => location.reload();
+  container.appendChild(retakeBtn);
+}
