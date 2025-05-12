@@ -52,7 +52,7 @@ const questions = [
 ];
 
 // ==============================
-// Variables
+// Constants & State
 // ==============================
 let currentQuestionIndex = 0;
 let score = 0;
@@ -62,10 +62,10 @@ const predefinedCode = "334556";
 // DOM Elements
 // ==============================
 const pages = {
-    welcome: document.getElementById('welcome-page'),
-    quiz: document.getElementById('quiz-page'),
-    score: document.getElementById('score-page'),
-    code: document.getElementById('code-page')
+  welcome: document.getElementById('welcome-page'),
+  quiz: document.getElementById('quiz-page'),
+  score: document.getElementById('score-page'),
+  code: document.getElementById('code-page')
 };
 
 const questionEl = document.getElementById('question');
@@ -75,147 +75,151 @@ const scoreEl = document.getElementById('score');
 const errorMsg = document.getElementById('error-message');
 
 // ==============================
-// Init
+// Page Initialization
 // ==============================
 window.onload = async () => {
-    const incognito = await detectIncognito();
-    if (incognito) {
-        alert("You cannot take the quiz in incognito/private mode.");
-        window.location.href = "https://www.google.com";
-        return;
-    }
+  const incognito = await detectIncognito();
+  if (incognito) {
+    alert("You cannot take the quiz in incognito/private mode.");
+    window.location.href = "https://www.google.com";
+    return;
+  }
 
-    if (getCookie("quizTaken")) {
-        showPage("code");
-    } else {
-        showPage("welcome");
-    }
+  if (getCookie("quizTaken")) {
+    showPage("code");
+  } else {
+    showPage("welcome");
+  }
 };
 
 // ==============================
 // Event Listeners
 // ==============================
 document.getElementById('start-quiz-btn').addEventListener('click', () => {
-    if (getCookie("quizTaken")) {
-        showPage("code");
-    } else {
-        startQuiz();
-    }
+  getCookie("quizTaken") ? showPage("code") : startQuiz();
 });
 
 document.getElementById('retake-quiz-btn').addEventListener('click', () => showPage("code"));
 
 document.getElementById('submit-code-btn').addEventListener('click', () => {
-    const code = document.getElementById('code-input').value.trim();
-    if (code === predefinedCode) {
-        eraseCookie("quizTaken");
-        errorMsg.textContent = "";
-        startQuiz();
-    } else {
-        errorMsg.textContent = "Incorrect Code. Please try again.";
-    }
+  const code = document.getElementById('code-input').value.trim();
+  if (code === predefinedCode) {
+    eraseCookie("quizTaken");
+    errorMsg.textContent = "";
+    startQuiz();
+  } else {
+    errorMsg.textContent = "Incorrect Code. Please try again.";
+  }
 });
 
 nextBtn.addEventListener('click', () => {
-    currentQuestionIndex++;
-    if (currentQuestionIndex < questions.length) {
-        loadQuestion();
-    } else {
-        finishQuiz();
-    }
+  currentQuestionIndex++;
+  currentQuestionIndex < questions.length ? loadQuestion() : finishQuiz();
+});
+
+// Lock quiz on tab switch or window blur
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden && getCurrentPage() === "quiz") {
+    lockQuiz();
+  }
 });
 
 // ==============================
-// Core Functions
+// Core Quiz Functions
 // ==============================
 function startQuiz() {
-    currentQuestionIndex = 0;
-    score = 0;
-    setCookie("quizTaken", "true", 7);
-    showPage("quiz");
-    loadQuestion();
+  currentQuestionIndex = 0;
+  score = 0;
+  setCookie("quizTaken", "true", 7);
+  showPage("quiz");
+  loadQuestion();
 }
 
 function loadQuestion() {
-    const q = questions[currentQuestionIndex];
-    questionEl.textContent = q.question;
-    optionsEl.innerHTML = '';
-    nextBtn.disabled = true;
+  const q = questions[currentQuestionIndex];
+  questionEl.textContent = q.question;
+  optionsEl.innerHTML = '';
+  nextBtn.disabled = true;
 
-    if (q.type === "short-answer" || q.type === "fill-in-the-blank") {
-        const input = document.createElement("input");
-        input.type = "text";
-        input.className = "code-input";
-        input.placeholder = "Write your answer here...";
-        optionsEl.appendChild(input);
-        nextBtn.disabled = false;
-        nextBtn.onclick = () => {
-            const userInput = input.value.trim();
-            if (q.type === "fill-in-the-blank" && userInput.toLowerCase() === q.answer.toLowerCase()) {
-                score++;
-            }
-            nextQuestion();
-        };
-    } else {
-        q.options.forEach(option => {
-            const btn = document.createElement("button");
-            btn.textContent = option;
-            btn.onclick = () => {
-                if (option === q.answer) score++;
-                nextQuestion();
-            };
-            optionsEl.appendChild(btn);
-        });
-    }
+  if (q.type === "short-answer" || q.type === "fill-in-the-blank") {
+    const input = document.createElement("input");
+    input.type = "text";
+    input.className = "code-input";
+    input.placeholder = "Write your answer here...";
+    optionsEl.appendChild(input);
+    nextBtn.disabled = false;
+
+    nextBtn.onclick = () => {
+      const userInput = input.value.trim();
+      if (q.type === "fill-in-the-blank" && userInput.toLowerCase() === q.answer.toLowerCase()) {
+        score++;
+      }
+      nextQuestion();
+    };
+  } else {
+    q.options.forEach(option => {
+      const btn = document.createElement("button");
+      btn.textContent = option;
+      btn.onclick = () => {
+        if (option === q.answer) score++;
+        nextQuestion();
+      };
+      optionsEl.appendChild(btn);
+    });
+  }
 }
 
 function nextQuestion() {
-    currentQuestionIndex++;
-    if (currentQuestionIndex < questions.length) {
-        loadQuestion();
-    } else {
-        finishQuiz();
-    }
+  currentQuestionIndex++;
+  currentQuestionIndex < questions.length ? loadQuestion() : finishQuiz();
 }
 
 function finishQuiz() {
-    const scorableCount = questions.filter(q => q.answer).length;
-    scoreEl.textContent = `${score} / ${scorableCount}`;
-    showPage("score");
+  const scorableCount = questions.filter(q => q.answer).length;
+  scoreEl.textContent = `${score} / ${scorableCount}`;
+  showPage("score");
+}
+
+function lockQuiz() {
+  eraseCookie("quizTaken");
+  alert("You switched tabs. The quiz is now locked.");
+  showPage("code");
 }
 
 // ==============================
-// Utility Functions
+// Helper Functions
 // ==============================
 function showPage(name) {
-    Object.values(pages).forEach(p => p.style.display = 'none');
-    pages[name].style.display = 'block';
+  Object.values(pages).forEach(p => p.style.display = 'none');
+  pages[name].style.display = 'block';
+}
+
+function getCurrentPage() {
+  return Object.entries(pages).find(([, el]) => el.style.display === 'block')?.[0] || "";
 }
 
 function setCookie(name, value, days) {
-    const d = new Date();
-    d.setTime(d.getTime() + days * 86400000);
-    document.cookie = `${name}=${value};expires=${d.toUTCString()};path=/`;
+  const d = new Date();
+  d.setTime(d.getTime() + days * 86400000);
+  document.cookie = `${name}=${value};expires=${d.toUTCString()};path=/`;
 }
 
 function getCookie(name) {
-    return document.cookie.split("; ").find(row => row.startsWith(name + "="))?.split("=")[1];
+  return document.cookie.split("; ").find(row => row.startsWith(name + "="))?.split("=")[1];
 }
 
 function eraseCookie(name) {
-    document.cookie = `${name}=; Max-Age=0; path=/`;
+  document.cookie = `${name}=; Max-Age=0; path=/`;
 }
 
 // ==============================
-// Incognito Mode Detection
+// Incognito Detection
 // ==============================
 function detectIncognito() {
-    return new Promise(resolve => {
-        const fs = window.RequestFileSystem || window.webkitRequestFileSystem;
-        if (!fs) {
-            resolve(false); // Browser doesn't support detection
-        } else {
-            fs(window.TEMPORARY, 100, () => resolve(false), () => resolve(true));
-        }
-    });
+  return new Promise(resolve => {
+    const fs = window.RequestFileSystem || window.webkitRequestFileSystem;
+    if (!fs) resolve(false);
+    else fs(window.TEMPORARY, 100, () => resolve(false), () => resolve(true));
+  });
 }
+
